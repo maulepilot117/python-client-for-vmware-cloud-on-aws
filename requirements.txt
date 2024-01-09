@@ -1,10 +1,10 @@
-certifi==2023.7.22
-charset-normalizer==3.1.0
-deepdiff==6.3
-idna==3.4
+certifi==2023.11.17
+charset-normalizer==3.3.2
+deepdiff==6.7.1
+idna==3.6
 ordered-set==4.1.0
-pandas==1.5.3
-prettytable==3.6.0
+pandas==2.1.4
+prettytable==3.9.0
 requests==2.31.0
 urllib3==1.26.18
-wcwidth==0.2.6
+wcwidth==0.2.12

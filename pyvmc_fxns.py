@@ -1179,11 +1179,22 @@ def connect_aws_account(**kwargs):
     resource_params = {'sddc_group_id':sddc_group_id,'strProdURL':strProdURL,'org_id':org_id, 'sessiontoken':session_token}
     resource_id = get_resource_id(**resource_params)
 
-    response = connect_aws_account_json(strProdURL, aws_acc, region, resource_id, org_id, session_token)
+    body = {
+    "type": "ADD_EXTERNAL_ACCOUNT",
+    "resource_id": resource_id,
+    "resource_type": "network-connectivity-config",
+    "config" : {
+            "type": "AwsAddExternalAccountConfig",
+            "account" : {
+                "account_number": aws_acc,
+                "regions" : [region],
+                "auto_approval": "true"
+            }
+        }
+    }
+
+    response = vtc_operations_json(strProdURL, org_id, session_token, body)
     json_response = response.json()
-    if not response.ok :
-        print("    Error: " + json_response['message'])
-        sys.exit(1)
     task_id = json_response ['id']
 
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
@@ -1201,12 +1212,22 @@ def disconnect_aws_account(**kwargs):
     resource_params = {'sddc_group_id':sddc_group_id,'strProdURL':strProdURL,'org_id':org_id, 'sessiontoken':session_token}
     resource_id = get_resource_id(**resource_params)
 
-    response = disconnect_aws_account_json(strProdURL, aws_acc, resource_id, org_id, session_token)
+    body = {
+    "type": "REMOVE_EXTERNAL_ACCOUNT",
+    "resource_id": resource_id,
+    "resource_type": "network-connectivity-config",
+    "config" : {
+            "type": "AwsRemoveExternalAccountConfig",
+            "policy_id": resource_id,
+            "account" : {
+                # "account_id": "1ec4c61b-3bfe-697c-8756-0b3a226bb42f",
+                "account_number": aws_acc
+            }
+        }
+    }
+
+    response = vtc_operations_json(strProdURL, org_id, session_token, body)
     json_response = response.json()
-    if not response.ok :
-        print("    Error: " + json_response['message'])
-        print("    Message: " + json_response['details'][0]['validation_error_message'])
-        sys.exit(1)
     task_id = json_response ['id']
 
     task_params={'task_id':task_id,'ORG_ID':org_id, 'strProdURL':strProdURL,'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
@@ -1233,12 +1254,26 @@ def attach_dxgw(**kwargs):
     res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
     resource_id = get_resource_id(**res_params)
 
-    json_response = attach_dxgw_json(strProdURL, routes, resource_id, org_id, dxgw_owner, dxgw_id, region, session_token)
-    if json_response is None:
-        print("Something went wrong.  Please check your config.ini file and parameters and try again.")
-        sys.exit(1)
-    else:
-        pass
+    body = {
+        "type": "ASSOCIATE_DIRECT_CONNECT_GATEWAY",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+   	    "config" : {
+            "type": "AwsAssociateDirectConnectGatewayConfig",
+		    "direct_connect_gateway_association": {
+			    "direct_connect_gateway_id": dxgw_id,
+			    "direct_connect_gateway_owner": dxgw_owner,
+                "peering_region_configs": [
+				    {
+					"allowed_prefixes": routes,
+                    "region": region
+				    }
+			    ]
+		    }
+        }
+    }
+
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, body)
     task_id = json_response ['id']
 
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
@@ -1257,12 +1292,19 @@ def detach_dxgw(**kwargs):
     res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
     resource_id = get_resource_id(**res_params)
 
-    json_response = detach_dxgw_json(strProdURL, resource_id, org_id, dxgw_id, session_token)
-    if json_response is None:
-        print("Something went wrong.  Please check your config.ini file and parameters and try again.")
-        sys.exit(1)
-    else:
-        pass
+    body = {
+        "type": "DISASSOCIATE_DIRECT_CONNECT_GATEWAY",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+   	    "config" : {
+            "type": "AwsDisassociateDirectConnectGatewayConfig",
+		    "direct_connect_gateway_association": {
+			    "direct_connect_gateway_id": dxgw_id
+		    }
+        }
+    }
+
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, body)
     task_id = json_response ['id']
 
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
@@ -1283,18 +1325,25 @@ def attach_sddc(**kwargs):
 
     res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
     resource_id = get_resource_id(**res_params)
-    response = attach_sddc_json(strProdURL, sddc_id, resource_id, org_id, session_token)
-    if response is None:
-        print("Something went wrong.  Please check your config.ini file and parameters and try again.")
-        sys.exit(1)
-    else:
-        pass
+
+    body = {
+        "type": "UPDATE_MEMBERS",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+        "config" : {
+            "type": "AwsUpdateDeploymentGroupMembersConfig",
+            "add_members": [
+                {
+                 "id": sddc_id
+                }
+            ],
+            "remove_members": []
+        }
+    }
+    
+    response = vtc_operations_json(strProdURL, org_id, session_token, body)
     json_response = response.json()
-    if not response.ok :
-        print ("    Error: " + json_response['message'])
-        task_id = 0
-    else:
-        task_id = json_response ['config']['operation_id']
+    task_id = json_response ['config']['operation_id']
     print(f'Task ID is {task_id}. Use get-task-status for a progress update.')
 
 
@@ -1308,19 +1357,25 @@ def detach_sddc(**kwargs):
     res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
     resource_id = get_resource_id(**res_params)
 
+    body = {
+        "type": "UPDATE_MEMBERS",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+        "config" : {
+            "type": "AwsUpdateDeploymentGroupMembersConfig",
+            "add_members": [],
+            "remove_members": [
+                {
+                 "id": sddc_id
+                }
+            ]
+        }
+    }
+
     print("===== Removing SDDC =========")
-    response = remove_sddc_json(strProdURL,sddc_id, resource_id, org_id, session_token)
-    if response is None:
-        print("Something went wrong.  Please check your config.ini file and parameters and try again.")
-        sys.exit(1)
-    else:
-        pass
+    response = vtc_operations_json(strProdURL, org_id, session_token, body)
     json_response = response.json()
-    if not response.ok :
-        print ("    Error: " + json_response['message'])
-        task_id = 0
-    else:
-        task_id = json_response ['config']['operation_id']
+    task_id = json_response ['config']['operation_id']
     print(f'Task ID is {task_id}. Use get-task-status for a progress update.')
 
 
@@ -1401,9 +1456,14 @@ def create_sddc_group(**kwargs):
             members.append(d)
     else:
         pass
-    json_response = create_sddc_group_json(strProdURL, name, description, members, org_id, session_token)
-    if json_response == None:
-        sys.exit(1)
+
+    body = {
+        "name": name,
+        "description": description,
+        "members": members
+    }
+    
+    json_response = create_sddc_group_json(strProdURL, org_id, session_token, body)
     task_id = json_response ['operation_id']
     print(f"The task id for the SSDC group {name} creation is: {task_id}. Use get-task-status for updates.")
 
@@ -1418,10 +1478,17 @@ def delete_sddc_group(**kwargs):
     if (check_empty_group(strProdURL,sddc_group_id, org_id, session_token)):
         res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
         resource_id = get_resource_id(**res_params)
-        response = delete_sddc_group_json(strProdURL, resource_id, org_id, session_token)
-        if response == None:
-            sys.exit(1)
-        print(f"The Task ID for the deletion of {resource_id} is {response ['id']}")
+
+        body = {
+            "type": "DELETE_DEPLOYMENT_GROUP",
+            "resource_id": resource_id,
+            "resource_type": "network-connectivity-config",
+            "config" : {
+                "type": "AwsDeleteDeploymentGroupConfig"
+            }
+        }   
+        
+        vtc_operations_json(strProdURL, org_id, session_token, body)
     else:
         print("SDDC Group not empty: detach all members")
 
@@ -1536,7 +1603,7 @@ def get_group_info(group_id, resource_id, org_id, session_token):
 
 def check_empty_group(strProdURL, group_id, org_id, session_token):
     myHeader = {'csp-auth-token': session_token}
-    myURL = "{}/api/inventory/{}/core/deployment-groups/{}".format(strProdURL, org_id, group_id)
+    myURL = f"{strProdURL}/api/inventory/{org_id}/core/deployment-groups/{group_id}"
     response = requests.get(myURL, headers=myHeader)
     json_response = response.json()
     # print(len(json_response['membership']['included']))
@@ -1669,7 +1736,7 @@ def attach_vpc(**kwargs):
                 }
             }
         }
-    json_response = attach_vpc_json(strProdURL, session_token, json_body, org_id)
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, json_body)
     task_id = json_response ['id']
 
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
@@ -1713,7 +1780,7 @@ def detach_vpc(**kwargs):
                 }
             }
         }
-    json_response = detach_vpc_json(strProdURL, session_token, json_body, org_id)
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, json_body)
     task_id = json_response ['id']
 
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
@@ -1815,7 +1882,7 @@ def add_vpc_prefixes(**kwargs):
             }
         }
 
-    json_response = add_vpc_prefixes_json(strProdURL, session_token, json_body, org_id)
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, json_body)
     task_id = json_response ['id']
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
     get_task_status(**task_params)
