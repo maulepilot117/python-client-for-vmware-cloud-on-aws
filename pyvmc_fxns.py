@@ -1617,6 +1617,112 @@ def check_empty_group(strProdURL, group_id, org_id, session_token):
 # ============================
 
 
+def attach_cust_tgw(**kwargs):
+    """Function to attach a customer TGW to a vTGW"""
+    strProdURL = kwargs['strProdURL']
+    org_id = kwargs['ORG_ID']
+    session_token = kwargs['sessiontoken']
+    auth_flag = kwargs['oauth']
+    aws_acc = kwargs['aws_account']
+    tgw_region = kwargs['region']
+    prefixes = kwargs['prefixes']
+    tgw_id = kwargs['tgwid']
+    sddc_group_id = kwargs['sddc_group_id']
+    sddc_region = kwargs['sddc_region']
+    res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
+    resource_id = get_resource_id(**res_params)
+
+    body = {
+        "type": "ASSOCIATE_CUSTOMER_TRANSIT_GATEWAY",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+        "org_id": org_id,
+        "config": {
+            "type": "AwsAssociationCustomerTransitGatewayConfig",
+            "customer_transit_gateway_association":{
+                "customer_transit_gateway_id": tgw_id,
+                "customer_transit_gateway_owner": aws_acc,
+                "customer_transit_gateway_region": tgw_region,
+                "peering_region_configs":{
+                    "configured_prefixes": prefixes,
+                    "region": sddc_region
+                }, 
+            },
+        },
+    }
+
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, body)
+    task_id = json_response ['id']
+
+    task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
+    get_task_status(**task_params)
+    
+
+def detach_cust_tgw(**kwargs):
+    """Detach customer TGW from VMware Transit Connect"""
+    strProdURL = kwargs['strProdURL']
+    org_id = kwargs['ORG_ID']
+    session_token = kwargs['sessiontoken']
+    auth_flag = kwargs['oauth']
+    tgw_id = kwargs['tgwid']
+    res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
+    resource_id = get_resource_id(**res_params)
+
+    body = {
+        "type": "DISASSOCIATE_CUSTOMER_TRANSIT_GATEWAY",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+        "config":{
+            "type": "AwsDissassociateCustomerTransitGatewayConfig",
+            "customer_transit_gateway_association": {
+                "customer_tranist_gateway_id": tgw_id
+            },
+        },
+    }
+
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, body)
+    task_id = json_response ['id']
+
+    task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
+    get_task_status(**task_params)
+
+
+def update_cust_tgw(**kwargs):
+    """Update advertised CIDR prefixes on customer TGW"""
+    strProdURL = kwargs['strProdURL']
+    org_id = kwargs['ORG_ID']
+    session_token = kwargs['sessiontoken']
+    auth_flag = kwargs['oauth']
+    tgw_id = kwargs['tgwid']
+    prefixes = kwargs['prefixes']
+    sddc_region = kwargs['sddc_region']
+    res_params = {'sessiontoken':session_token, 'strProdURL':strProdURL, 'org_id':org_id, 'sddc_group_id':sddc_group_id}
+    resource_id = get_resource_id(**res_params)
+
+    body = {
+        "type": "UPDATE_CUSTOMER_TRANSIT_GATEWAY",
+        "resource_id": resource_id,
+        "resource_type": "network-connectivity-config",
+        "org_id": org_id,
+        "config":{
+            "type": "AwsUpdateCustomerTransitGatewayConfig",
+            "customer_transit_gateway_association": {
+                "customer_transit_gateway_id": tgw_id,
+                "peering_region_configs":{
+                    "configured_prefixes": prefixes,
+                    "region": sddc_region
+                },
+            },
+        },
+    }
+
+    json_response = vtc_operations_json(strProdURL, org_id, session_token, body)
+    task_id = json_response ['id']
+
+    task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
+    get_task_status(**task_params)
+
+
 def get_route_tables(strProdURL, resource_id, org_id, session_token):
     json_response = get_route_tables_json(strProdURL, resource_id, org_id, session_token)
     if  not json_response['content']:       #'content' is empty []
@@ -1886,15 +1992,6 @@ def add_vpc_prefixes(**kwargs):
     task_id = json_response ['id']
     task_params={'task_id':task_id,'ORG_ID':org_id,'strProdURL':strProdURL, 'sessiontoken':session_token, 'oauth':auth_flag, 'verbose':False}
     get_task_status(**task_params)
-
-
-# ============================
-# VTC - TGW Operations
-# ============================
-
-
-def attach_tgw(**kwargs):
-    """Function to attach a customer TGW to a vTGW"""
 
 
 # ============================
