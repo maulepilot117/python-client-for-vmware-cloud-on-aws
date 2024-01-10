@@ -696,6 +696,7 @@ def main():
     get_task_status_parser.add_argument('-tid','--task_id', required=True, help="The ID of the task for which you would like the status.")
     get_task_status_parser.add_argument('-v','--verbose', action='store_true', help="Additional information printed during task.")
     get_task_status_parser.set_defaults(func = get_task_status)
+
 # ============================
 # VTC - AWS Operations
 # ============================
@@ -791,14 +792,24 @@ def main():
 # VTC - TGW Operations
 # ============================
 
-    # attach_tgw_parser=vtc_parser_subs.add_parser('attach-tgw', parents=[auth_flag, vmc_flag, org_id_flag], help='Attach external TGW to vTGW')
-    # attach_tgw_parser.add_argument('-t', '--tgw_id', required=True, help='The transit gateway ID the vTC will be peered with')
-    # attach_tgw_parser.add_argument('-a', '--aws_id', required=True, help='The AWS Account ID that owns the transit gateway')
-    # attach_tgw_parser.add_argument('-s', '--source_region', required=True, help='The AWS region the vTGW is located')
-    # attach_tgw_parser.add_argument('-d', '--dest_region', required=True, help='The AWS region where the customer TGW is located')
-    # attach_tgw_parser.add_argument('-c', '--cidr', required=True, nargs=+, help='CIDR ranges that are permitted to communicate over the attachment.  Enter one of more complete CIDR range')
-    # attach_tgw_parser.set_defaults(func=attach_tgw)
+    attach_tgw_parser=vtc_parser_subs.add_parser('attach-tgw', parents=[auth_flag, vmc_url_flag, org_id_flag], help='Attach external TGW to SDDC Group')
+    attach_tgw_parser.add_argument('-t', '--tgwid', required=True, help='The transit gateway ID the SDC Group will be peered with')
+    attach_tgw_parser.add_argument('-a', '--aws_acc', required=True, help='The AWS Account ID that owns the transit gateway')
+    attach_tgw_parser.add_argument('-s', '--sddc_region', required=True, help='The AWS region the vTGW is located')
+    attach_tgw_parser.add_argument('-d', '--tgw_region', required=True, help='The AWS region where the customer TGW is located')
+    attach_tgw_parser.add_argument('-p', '--prefixes', required=True, nargs='+', help='CIDR ranges that are permitted to communicate over the attachment.  Enter one of more complete CIDR range')
+    attach_tgw_parser.add_argument('-g', '--sddc_group_id', required=True, help='The SDDC Group ID for the source SDDC Group')
+    attach_tgw_parser.set_defaults(func=attach_cust_tgw)
 
+    detach_tgw_parser=vtc_parser_subs.add_parser('detach-tgw', parents=[auth_flag, vmc_url_flag, org_id_flag], help='Detach external TGW from SDDC Group')
+    detach_tgw_parser.add_argument('-t', '--tgwid', required=True, help='The transit gateway ID to disconnect from the SDDC Group')
+    detach_tgw_parser.set_defaults(func=detach_cust_tgw)
+
+    update_tgw_parser=vtc_parser_subs.add_parser('update-tgw', parents=[auth_flag, vmc_url_flag, org_id_flag], help='Update the prefixes on the external TGW peering')
+    update_tgw_parser.add_argument('-t', '--tgwid', required=True, help='The transit gateway ID for the external TGW the SDDC Group is peered wiht')
+    update_tgw_parser.add_argument('-p', '--prefixes', required=True, nargs='+', help='The CIDR prefixes to advertise over the TGW peering')
+    update_tgw_parser.add_argument('-s', '--sddc_region', required=True, help='The source SDDC region')
+    update_tgw_parser.set_defaults(func=update_cust_tgw)
 
 # ============================
 # NSX-T - Firewall - Gateway
